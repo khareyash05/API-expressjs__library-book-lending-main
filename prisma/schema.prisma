@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  password      String
+  role          String
+  member        Member?
+  refresh_token String?
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime? @default(now())
+}
+
+model Member {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  phone     String
+  address   String
+  user_id   String?  @unique @db.ObjectId
+  user      User?    @relation(fields: [user_id], references: [id])
+  status    String
+  loans     Loan[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model Book {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  description      String
+  author_id        String   @db.ObjectId
+  author           Author   @relation(fields: [author_id], references: [id])
+  genre_ids        String[] @db.ObjectId
+  genres           Genre[]  @relation(fields: [genre_ids], references: [id])
+  publication_year String
+  cover_image      String
+  bookshelf_number String?
+  total_book       Int
+  available        Int
+  loans            Loan[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+}
+
+model Author {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model Genre {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  book_ids  String[] @db.ObjectId
+  books     Book[]   @relation(fields: [book_ids], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model Loan {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  book_id     String       @db.ObjectId
+  member_id   String       @db.ObjectId
+  start_date  DateTime     @default(now())
+  due_date    DateTime
+  return_date DateTime?
+  status_id   String       @db.ObjectId
+  late_charge Late_charge?
+  book        Book         @relation(fields: [book_id], references: [id])
+  member      Member       @relation(fields: [member_id], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now())
+  loan_status Loan_status? @relation(fields: [status_id], references: [id])
+}
+
+model Loan_status {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String @unique
+  loans Loan[]
+}
+
+model Late_charge {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  loan_id     String   @unique @db.ObjectId
+  total_delay Int
+  charge      Int
+  is_paid     Boolean  @default(false)
+  loan        Loan     @relation(fields: [loan_id], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
