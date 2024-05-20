@@ -1,23 +1,34 @@
-import publicRouter from "./routes/public";
-import privateRouter from "./routes/private";
+import express from 'express'
+import { graphqlHTTP } from 'express-graphql'
+import { buildSchema } from 'graphql'
+import * as path from 'path'
 
-import express from "express";
-import { PrismaClient } from "@prisma/client";
+const fs =  require('fs')
+const schemaString = fs.readFileSync(path.join(__dirname, './schema.gql'), 'utf8')
+const schema = buildSchema(schemaString)
 
-import dotenv from "dotenv";
-dotenv.config();
+// const authMiddleware = (req,res,next)=>{
 
-const prisma = new PrismaClient();
+// }
+
+const root ={
+  //@ts-ignore
+  getUser :({id},req)=>{
+    if(id==='1') return{id:'1',email:'a@b.com',firstName:'John',lastName:'Doe'}
+    return null;
+  },
+  //@ts-ignore
+  createUser  :({input},req)=>{
+    return {id:'2',...input}
+  }
+}
 
 const app = express();
-const PORT = 5000;
+app.use('/graphql',graphqlHTTP({
+  schema:schema,
+  rootValue:root,
+  graphiql:true
+}))
 
-//middleware
-app.use(express.json());
-
-app.use(publicRouter);
-app.use(privateRouter);
-
-app.listen(PORT, () => {
-  console.log(`Server running in PORT: ${PORT}`);
-});
+const PORT = 4000
+app.listen(PORT)
